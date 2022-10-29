@@ -1,0 +1,104 @@
+\documentclass[a4paper]{article}
+
+\usepackage{tikz}
+\usepackage{multicol}
+
+\begin{document}
+\thispagestyle{empty} 
+
+\begin{tikzpicture}
+% Field:
+\draw (-8, 0) -- (6, 0);
+\draw (-8, 0) -- (-8, -8);
+\draw (-8, -8) -- (6, -8);
+\draw (6, -8) -- (6, 0);
+
+% Goals:
+\draw (-8, -3) -- (-9, -3);
+\draw (-8, -5) -- (-9, -5);
+\draw (-9, -3) -- (-9, -5);
+
+\draw (6, -3) -- (7, -3);
+\draw (6, -5) -- (7, -5);
+\draw (7, -3) -- (7, -5);
+
+%Mid-field:
+\draw (-1, -8) -- (-1, 0);
+\draw (-1, -4) circle (0.6cm);
+
+% Areas:
+% Left:
+\draw (-8, -2) -- (-6, -2);
+\draw (-6, -2) -- (-6, -6);
+\draw (-6, -6) -- (-8, -6);
+
+\draw (-8, -2.7) -- (-7, -2.7);
+\draw (-7, -2.7) -- (-7, -5.3);
+\draw (-7, -5.3) -- (-8, -5.3);
+
+\draw[fill=black] (-6.5, -4) circle (0.03cm);
+\draw (-6, -5) arc (-30:30:2);
+
+% Right:
+\draw (4, -2) -- (6, -2);
+\draw (4, -2) -- (4, -6);
+\draw (4, -6) -- (6, -6);
+
+\draw (5, -2.7) -- (6, -2.7);
+\draw (5, -2.7) -- (5, -5.3);
+\draw (5, -5.3) -- (6, -5.3);
+
+\draw[fill=black] (4.5, -4) circle (0.03cm);
+\draw (4, -3) arc (145:215:1.7);
+
+% Coordinates:
+% Bottom:
+\draw[fill=black] (-8, -8) circle (0.08cm);
+\draw (-8,-8.5)  node {(-52.5, -34)};
+
+\draw[fill=black] (-1, -8) circle (0.08cm);
+\draw (-1,-8.5)  node {(0, -34)};
+
+\draw[fill=black] (6, -8) circle (0.08cm);
+\draw (6,-8.5)  node {(52.5, -34)};
+
+% Top:
+\draw[fill=black] (-8, 0) circle (0.08cm);
+\draw (-8,0.5)  node {(-52.5, 34)};
+
+\draw[fill=black] (-1, 0) circle (0.08cm);
+\draw (-1,0.5)  node {(0, 34)};
+
+\draw[fill=black] (6, 0) circle (0.08cm);
+\draw (6,0.5)  node {(52.5, 34)};
+
+% Goalkeeper:
+\draw[font=\scriptsize,color=red] (-8,-4)  node[align=center] {Goalkeeper}; % {Goalkeeper\\Defensive team};
+
+% Tactical units:
+% Defense:
+\draw[dashed] (-4.5, -8) -- (-4.5, 0);
+\draw[font=\footnotesize] (-6.5,-1)  node[align=center] {DEFENSE};
+
+\draw[fill=black] (-4.5, -8) circle (0.08cm);
+\draw (-4.5,-8.5)  node {(-30, -34)};
+
+\draw[fill=black] (-4.5, 0) circle (0.08cm);
+\draw (-4.5,0.5)  node {(-30, 34)};
+
+% Mid-field:
+\draw[font=\footnotesize] (-1,-1)  node[align=center] {MIDFIELD};
+
+% Offensive:
+\draw[dashed] (2.5, -8) -- (2.5, 0);
+\draw[font=\footnotesize] (4.5,-1)  node[align=center] {OFFENSE};
+
+\draw[fill=black] (2.5, -8) circle (0.08cm);
+\draw (2.5,-8.5)  node {(30, -34)};
+
+\draw[fill=black] (2.5, 0) circle (0.08cm);
+\draw (2.5, 0.5)  node {(30, 34)};
+
+\end{tikzpicture}
+
+\end{document}

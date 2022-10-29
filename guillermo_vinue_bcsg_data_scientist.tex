@@ -1,0 +1,187 @@
+\documentclass{beamer}
+\usetheme{Frankfurt}
+
+\usepackage{subfig}
+\newsavebox{\measurebox}
+\usepackage{pbox}
+\usepackage[makeroom]{cancel}
+\renewcommand{\CancelColor}{\color{red}}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{multicol}
+\usepackage{hyperref}
+
+\title{BCSG - Football, Data Scientist Application}
+\author[BCSG - Football, Data Scientist Application]{Guillermo Vinu\'e Vis\'us \\ PhD in Statistics \\ Data scientist}
+\institute[Guillermo Vinu\'e Vis\'us, PhD]{}
+\vspace{0.075cm}
+\date{\textcolor{brown}{{Valencia, Spain \\ October 2022}} \\
+\vspace{0.2cm}
+\hspace*{0.2cm}\includegraphics[width = 0.1\textwidth]{figures/bcsg.png}
+}
+
+\useoutertheme[subsection=false]{miniframes}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\slideentry}{\advance\beamer@xpos by1\relax}{}{}{}
+\def\beamer@subsectionentry#1#2#3#4#5{\advance\beamer@xpos by1\relax}%
+\makeatother
+
+\setbeamersize{text margin left = 4mm, text margin right = 4mm} 
+\definecolor{wicblue}{RGB}{45,149,210}
+\setbeamercolor{structure}{fg=wicblue}
+\setbeamercolor{section in head/foot}{bg=wicblue}
+\setbeamercolor{author in head/foot}{bg=wicblue}
+\setbeamercolor{item}{fg=wicblue}
+
+\setbeamertemplate{navigation symbols}{}
+\makeatletter
+\defbeamertemplate*{headline}{my smoothbars theme}
+{%
+  \pgfuseshading{beamer@barshade}%
+  \ifbeamer@sb@subsection%
+    \vskip-9.75ex%
+  \else%
+    \vskip-7ex%
+  \fi%
+  \begin{beamercolorbox}[ignorebg,ht=2.25ex,dp=3.75ex]{section in head/foot}
+    \insertnavigation{.9\paperwidth}\hfill\insertframenumber/\inserttotalframenumber\hspace{.5em}
+  \end{beamercolorbox}%
+  \ifbeamer@sb@subsection%
+    \begin{beamercolorbox}[ignorebg,ht=2.125ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{subsection in head/foot}
+      \usebeamerfont{subsection in head/foot}\insertsubsectionhead
+    \end{beamercolorbox}%
+  \fi%
+}%
+\makeatother		
+		
+\setbeamertemplate{footline}{
+\hbox{\begin{beamercolorbox}[wd=\paperwidth, ht = 2.5ex, dp = 1ex, leftskip = 0.3cm, rightskip = 0.3cm]{author in head/foot}
+\usebeamerfont{author in head/foot}\insertshortauthor\hfill\insertshortinstitute\end{beamercolorbox}}}
+
+\newlength\imagewidth
+\newlength\imagescale
+
+\begin{document}
+
+\begin{frame}[plain]
+\titlepage
+\end{frame}
+
+\section{General approach}
+\begin{frame}{}
+\begin{enumerate}
+\scriptsize
+\item Visualize where the players are located at the first timestamp with data available. By means of a visual inspection, we will be able to discern where each team attacked at the first period and consequently at the second one. \textcolor{red}{Tactical units are defined differently depending on what direction the players attack}.
+
+\vspace*{0.25cm}
+
+\item Once we set the attacking direction of each team, use the tracking $x$ coordinate from each timestamp and period to assign the tactical units for every player.
+
+\vspace*{0.35cm}
+
+\item Count the number of times that each tactical unit is assigned for each player and compute the corresponding percentages.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{cc}
+\hspace*{-0.2cm}\includegraphics[width=0.48\textwidth]{figures/football_field_defensive.png}&
+\includegraphics[width=0.48\textwidth]{figures/football_field_offensive.png}\\
+\end{tabular}
+\end{figure}
+\end{frame}
+
+
+\section{Results}
+\begin{frame}{}
+
+\begin{minipage}{0.3\textwidth} 
+\begin{figure}[H]
+\begin{center}
+\vspace*{0.2cm}\includegraphics[width=1.7\textwidth]{figures/paris_marseille.png}
+\end{center}
+\end{figure} 
+\end{minipage}
+\   \
+\hfill \begin{minipage}{6cm}
+\vspace*{-0.1cm}
+\begin{itemize}
+\scriptsize
+\item The plot allows us to infer where the team is positioned at the start of the match.
+\item The table shows the assignation of a tactical unit and the percentages associated with the three of them for each player.
+\end{itemize}
+\end{minipage}
+
+\begin{figure}[H]
+\vspace*{-0.5cm}
+\includegraphics[width=0.86\textwidth]{figures/marseille.png}
+\end{figure}
+
+\end{frame}
+
+\section{Potential improvements}
+\begin{frame}{}
+
+\begin{itemize}
+\footnotesize
+\item The method may refine the assignation of tactical units if we knew what happened at every timestamp, that is to say, if we had events data. 
+
+\vspace*{0.6cm}
+
+\item We could for example know when defenders just went to the opposing area because of a corner kick. 
+
+\vspace*{0.6cm}
+
+\item That would allow us to remove these sporadic situations and focus on the usual players' range of action. 
+\end{itemize}
+
+\end{frame}
+
+\section{Applications}
+\begin{frame}{}
+
+\begin{itemize}
+\footnotesize
+\item To find out if players form a solid block by joining defensive and offensive lines as close as possible.
+
+\vspace*{0.6cm}
+
+\item To identify players who are either more dynamic or more static and provide them with this feedback.
+
+\vspace*{0.6cm}
+
+\item To analyze the teams' style of play regarding how many of their players perform mostly in defense or in offense.
+
+\vspace*{0.6cm}
+
+\item To redefine players according their movement. For example, we can identify right/left defenders who join often the attack or strikers who help in defense.
+\end{itemize}
+
+\end{frame}
+
+\section{Software}
+\begin{frame}{}
+
+\begin{itemize}
+\footnotesize
+\item Software tools used have been R (including R Markdown) and \LaTeX{}.
+
+\vspace*{0.6cm}
+
+\item Three R functions have been created. A general R script generates the final results.
+
+\vspace*{0.6cm}
+
+\item An html interactive report shows these results and discusses them.
+
+\vspace*{0.6cm}
+
+\item The link to access all the source files is \url{https://github.com/guivivi/bcsg}
+\end{itemize}
+
+\end{frame}
+
+\end{document}

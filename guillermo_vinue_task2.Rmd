@@ -1,0 +1,384 @@
+---
+title: "BCSG - Football, Data Scientist Application. TASK 2"
+author: "Guillermo Vinué Visús"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Define overall document options: 
+knitr::opts_knit$set(root.dir = "~/jobs/sports/bcsg/task/")
+options(knitr.table.format = "html") 
+```
+
+# General approach
+
+In order to classify players to tactical units, we need to consider two things:
+
+* **Where the player is located**: This is given by the coordinates $x$ and $y$ of the SkillCorner tracking data. 
+* **Where the team attacks in each period**: Indeed, depending on the field side, the tactical units will be defined differently. This is illustrated with the following two pictures (generated with the typesetting system $\LaTeX{}$), that display the football field with the size defined by SkillCorner. The first one shows that if the team's goalkeeper protects the left goal, the tactical units for that team are defined from left to right. On the other hand, if the team's goalkeeper protects the right goal, the tactical units are defined from right to left. This being said, my proposal is to define three tactical units, namely, *defense*, *midfield* and *offense* using the values $x = \pm 30$ as cut-off coordinates, as shown below: 
+
+```{r field defensive, echo = FALSE, fig.cap = "", out.width = '100%'}
+knitr::include_graphics("/home/guillevinue/jobs/sports/bcsg/task/code/football_field_defensive.png")
+```
+
+```{r field offensive, echo = FALSE, fig.cap = "", out.width = '100%'}
+knitr::include_graphics("/home/guillevinue/jobs/sports/bcsg/task/code/football_field_offensive.png")
+```
+
+As confirmed with these two images, the question about where the team attacks is equivalent to know the goal of the team's goalkeeper at the start of the match. Thus, we will be able to use the tracking coordinates in the right way to assign players to the three defined tactical units. 
+
+By inspecting the SkillCorner tracking data, and to the best of my knowledge, it is not generally indicated where the teams were positioned at the start of the games, or in other words, there is no information of the coin toss done by the referee. Exception of previous claim is the game's id 2440 (Liverpool - Manchester City), where the Liverpool's goalkeeper (Alisson Becker) does appear.
+
+With all this information, the proposed methodology consists of the following main steps, for each game: 
+
+1. Visualize where the players are located at the first timestamp with data available. By means of a visual inspection, we will be able to discern where each team attacked at the first period and consequently at the second one.
+
+2. Once we set the attacking direction of each team, use the tracking $x$ coordinate from each timestamp and period to assign the tactical units to every player.
+
+3. Count the number of times that each tactical unit is assigned for each player and compute the corresponding percentages.
+
+```{r packages, functions and data, include = FALSE, message = FALSE}
+# Load packages:
+library(jsonlite)
+library(tidyverse)
+library(ggrepel)
+library(readxl)
+library(kableExtra)
+
+# Source functions:
+source("code/do_plot_first_positioning.R")
+source("code/do_assign_players_tactical_unit.R")
+source("code/do_generate_results.R")
+
+# Games' ids:
+ids_folders <- list.files("data/data/matches/")
+
+# Assignation results:
+df_res_id_perc <- read_excel("code/assignation_players_tactical_units.xlsx")
+# Extract most common tactical unit:
+df0 <- df_res_id_perc %>%
+  group_by(team_name, name) %>%
+  filter(perc == max(perc)) %>%
+  ungroup() 
+# Teams' names:
+teams <- sort(unique(df0$team_name))
+```
+
+## Goal each team attacks in the first half {.tabset .tabset-fade}
+
+These plots for each game allow us to visualize the players' location at the start of the match and find out in which direction each team was attaching.
+
+### Inter - Juventus (id: 2068)
+
+```{r plot id 2068, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[1])
+```
+
+### Paris - Marseille (id: 2269)
+
+```{r plot id 2269, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[2])
+```
+
+### Bayern Munchen - Dortmund (id: 2417)
+
+```{r plot id 2417, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[3])
+```
+
+### Liverpool - Manchester City (id: 2440)
+
+```{r plot id 2440, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[4])
+```
+
+### FC Barcelona - Real Madrid (id: 2841)
+
+```{r plot id 2841, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[5])
+```
+
+### Real Madrid - FC Barcelona (id: 3442)
+
+```{r plot id 3442, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[6])
+```
+
+### Juventus - Inter (id: 3518)
+
+```{r plot id 3518, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[7])
+```
+
+### Dortmund - Bayern Munchen (id: 3749)
+
+```{r plot id 3749, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[8])
+```
+
+### Manchester City - Liverpool (id: 4039)
+
+```{r plot id 4039, echo = FALSE, fig.width = 10, warning = FALSE}
+do_plot_first_positioning(ids_folders[9])
+```
+
+</div>
+
+# Results {.tabset .tabset-fade}
+
+The SkillCorner tracking data provide observations every ten seconds. This creates a detailed big database. From the computational point of view, I have made the decision of filtering the data every minute because of two reasons: (i) to reduce the computational burden and obtain results in a reasonable amount of time; (ii) under the assumption that it is more likely that the variability of players' positions is larger for every minute than for every consecutive timestamp. 
+
+The method thus proposed and programmed has returned results for the whole bunch of teams in 32 minutes. Results show that almost all players are classified in the midfield category. The method has worked well in terms of achieving the objective of assigning players to a given tactical unit, but has returned a very homogeneous classification. A thorough discussion of these results will be given in [Applications].
+
+## Bayern Munchen
+
+```{r res1, echo = FALSE, warning = FALSE}
+df1 <- df0 %>%
+  filter(team_name == teams[3]) %>%
+  select(name, tactical_unit) 
+
+df1_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[3]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df1 <- left_join(df1, df1_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df1, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Dortmund
+
+```{r res2, echo = FALSE, warning = FALSE}
+df2 <- df0 %>%
+  filter(team_name == teams[1]) %>%
+  select(name, tactical_unit) 
+
+df2_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[1]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df2 <- left_join(df2, df2_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df2, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## FC Barcelona
+
+```{r res3, echo = FALSE, warning = FALSE}
+df3 <- df0 %>%
+  filter(team_name == teams[2]) %>%
+  select(name, tactical_unit) 
+
+df3_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[2]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df3 <- left_join(df3, df3_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df3, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Inter
+
+```{r res4, echo = FALSE, warning = FALSE}
+df4 <- df0 %>%
+  filter(team_name == teams[4]) %>%
+  select(name, tactical_unit) 
+
+df4_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[4]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc) 
+
+df4 <- left_join(df4, df4_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df4, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Juventus
+
+```{r res5, echo = FALSE, warning = FALSE}
+df5 <- df0 %>%
+  filter(team_name == teams[5]) %>%
+  select(name, tactical_unit) 
+
+df5_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[5]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df5 <- left_join(df5, df5_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df5, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Liverpool
+
+```{r res6, echo = FALSE, warning = FALSE}
+df6 <- df0 %>%
+  filter(team_name == teams[6]) %>%
+  select(name, tactical_unit) 
+
+df6_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[6]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df6 <- left_join(df6, df6_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df6, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Manchester City
+
+```{r res7, echo = FALSE, warning = FALSE}
+df7 <- df0 %>%
+  filter(team_name == teams[7]) %>%
+  select(name, tactical_unit) 
+
+df7_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[7]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df7 <- left_join(df7, df7_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df7, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Marseille
+
+```{r res8, echo = FALSE, warning = FALSE}
+df8 <- df0 %>%
+  filter(team_name == teams[8]) %>%
+  select(name, tactical_unit) 
+
+df8_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[8]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df8 <- left_join(df8, df8_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df8, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Paris
+
+```{r res9, echo = FALSE, warning = FALSE}
+df9 <- df0 %>%
+  filter(team_name == teams[9]) %>%
+  select(name, tactical_unit) 
+
+df9_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[9]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df9 <- left_join(df9, df9_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df9, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+## Real Madrid
+
+```{r res10, echo = FALSE, warning = FALSE}
+df10 <- df0 %>%
+  filter(team_name == teams[10]) %>%
+  select(name, tactical_unit) 
+
+df10_tu <- df_res_id_perc %>%
+  mutate(perc = paste0(perc, "%")) %>%
+  filter(team_name == teams[10]) %>%
+  select(name, tactical_unit, perc) %>%
+  pivot_wider(names_from = tactical_unit, values_from = perc)
+
+df10 <- left_join(df10, df10_tu, by = "name") %>%
+  mutate(tactical_unit = cell_spec(tactical_unit, color = ifelse(tactical_unit == "defensive_line", "red",
+                                                                 ifelse(tactical_unit == "midfield_line",
+                                                                        "blue", "green"))))
+
+kable(df10, align = "ccccc", escape = FALSE) %>%
+  kable_styling()
+```
+
+</div>
+
+# Potential improvements given more resources
+
+The method may refine the assignation of tactical units if we knew what happened at every timestamp, that is to say, if we had events data. We could for example know when defenders just went to the opposing area because of a corner kick. That would allow us to remove these sporadic situations and focus on the usual players' range of action. 
+
+
+# Applications
+
+Before inspecting results, we could have expected to see most defenders assigned to the defensive unit and most strikers to the offensive one. This has not happened, since almost all players have been assigned to the midfield class. However, the results obtained do provide some interesting insights. First of all, we can draw the conclusion that all these big teams try to leave as little space as possible between the defensive line and the offensive one, so that the opposing team has little room to develop plays. This means that the defense is usually pushed up and that the strikers are involved in the team's defensive strategy. This may be a plausible explanation of the overall midfield unit assignation. 
+
+The method could be also used to find players who do not follow that team's strategy. In mathematical terms, we would call these players as outliers or anomalies. In this sense, we see that defenders Diego Godin (Inter) and Nicolas Otamendi (Manchester City), and striker Marley Ake (Marseille) has a limited area of action. With this information, coaches could investigate the reasons for this different performance. 
+
+Furthermore, there are other players who, despite being assigned to midfield, share a high percentage in other unit. In other words, they are borderline players. Juventus show three examples: Leonardo Bonucci, Matthijs de Ligt and Mattia De Sciglio, with $45.02\%, 43.92\%, 43.85$ of their respective time spent in the defensive area. On the other hand, in addition to the aforementioned case of Otamendi, Aymeric Laporte and Eric Garcia also show a high percentage for defensive unit ($42.81\%$ and $41.12\%$). From these results, we could infer that Juventus and Manchester City prefer to keep more players closer to the goalkeeper than the rest of the teams. Dejan Lovren from Liverpool is also a very borderline player ($47.59\%$ of his time in defense). Regarding the offensive aspect, Sergio Agüero from Manchester City is, after the mentioned Ake, the player who spent most time in the offense ($35.6\%$). The fourth most offensive player played also for Marseille, namely, Morgan Sanson, so Marseille have left at least two players close to the opposing's goalkeeper.
+
+As a summary, this approach could be applied within some different scenarios:
+
+* To find out if players form a solid block by joining defensive and offensive lines as close as possible.
+* To identify players who are either more dynamic or more static and provide them with this feedback.
+* To analyze the teams' style of play regarding how many of their players perform mostly in defense or in offense.
+* To redefine players according their movement. For example, we can identify right/left defenders who join often the attack or strikers who help in defense.
+
+# Software
+
+In terms of software development, three main R functions have been created:
+
+* *do_plot_first_positioning()*, that visualizes the players' position at the start of each match.
+* *do_assign_players_tactical_unit()*, that is the generic method to assign each player to a tactical unit based on their field coordinates.
+* *do_generate_results()*, that returns the tactical unit for all the players of the same team.
+
+The overall script *get_results.R* calls the last two aforementioned functions to obtain the results finally described in this report, which has been created with R Markdown. All the code is commented to assist in understanding the procedure development.
